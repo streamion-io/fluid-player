@@ -490,6 +490,10 @@ const fluidPlayerClass = function () {
         xmlHttpReq.send();
     };
 
+    self.fakeSendRequest = (vast, functionReadyStateChange) => {
+        setTimeout(() => functionReadyStateChange.bind({ vast })(), 0);
+    };
+
     // TODO: rename
     self.announceLocalError = (code, msg) => {
         const parsedCode = typeof (code) !== 'undefined' ? parseInt(code) : 900;

@@ -476,7 +476,7 @@ export default function (playerInstance, options) {
 
             if ((typeof arrayCreativeLinears !== 'undefined') && (arrayCreativeLinears !== null) && arrayCreativeLinears.length) {
 
-                const creativeLinear = arrayCreativeLinears[0];
+              const creativeLinear = arrayCreativeLinears[0];
                 playerInstance.registerTrackingEvents(creativeLinear, tmpOptions);
 
                 clickTracks = playerInstance.getClickTrackingEvents(creativeLinear);
@@ -697,13 +697,59 @@ export default function (playerInstance, options) {
             playerInstance.processVastXml(xmlResponse, tmpOptions, callBack);
         };
 
-        if (numberOfRedirects <= playerInstance.displayOptions.vastOptions.maxAllowedVastTagRedirects) {
+        const handleXml = function () {
+            self = this;
 
-            playerInstance.sendRequest(
+            const xml = new DOMParser().parseFromString(self.vast, 'application/xml');
+
+            if (!xml) {
+              callBack(false);
+              return;
+            }
+
+            playerInstance.inLineFound = playerInstance.hasInLine(xml);
+
+            if (!playerInstance.inLineFound && playerInstance.hasVastAdTagUri(xml)) {
+
+                const vastAdTagUri = playerInstance.getVastAdTagUriFromWrapper(xml);
+                if (vastAdTagUri) {
+                    playerInstance.resolveVastTag(vastAdTagUri, numberOfRedirects, tmpOptions, callBack);
+                } else {
+                    callBack(false);
+                    return;
+                }
+            }
+
+            if (numberOfRedirects > playerInstance.displayOptions.vastOptions.maxAllowedVastTagRedirects && !playerInstance.inLineFound) {
+                callBack(false);
+                return;
+            }
+
+            playerInstance.processVastXml(xml, tmpOptions, callBack);
+        };
+
+        const isUrl = (str) => {
+            try {
+                new URL(str)
+                return true;
+            } catch {
+                return false;
+            }
+        };
+
+        if(isUrl(vastTag)) {
+            if (numberOfRedirects <= playerInstance.displayOptions.vastOptions.maxAllowedVastTagRedirects) {
+                playerInstance.sendRequest(
+                    vastTag,
+                    true,
+                    playerInstance.displayOptions.vastOptions.vastTimeout,
+                    handleXmlHttpReq
+                );
+            }
+        } else {
+            playerInstance.fakeSendRequest(
                 vastTag,
-                true,
-                playerInstance.displayOptions.vastOptions.vastTimeout,
-                handleXmlHttpReq
+                handleXml,
             );
         }
 
